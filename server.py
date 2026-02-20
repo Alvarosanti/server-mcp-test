@@ -2,6 +2,7 @@ from fastmcp import FastMCP
 from fastmcp.server.apps import AppConfig, ResourceCSP
 from fastmcp.tools import ToolResult
 from mcp import types
+from typing import Optional
 
 mcp = FastMCP("Catalog App Server")
 
@@ -11,10 +12,42 @@ FRONTEND_ORIGIN = (
 
 RANGE_EARNINGS_VIEW_URI = "ui://catalog/range-earnings.html"
 BENEFITS_VIEW_URI = "ui://catalog/benefits.html"
+CARD_DASHBOARD_VIEW_URI = "ui://catalog/card-dashboard.html"
+IDENTIFICATION_FLOW_VIEW_URI = "ui://catalog/identification-flow.html"
 
 
-def _wrapper_html(*, iframe_src: str, event_type: str, tool_name: str) -> str:
-    return f"""<!doctype html>
+def _wrapper_html(
+        *,
+        iframe_src: str,
+        event_type: Optional[str] = None,
+        tool_name: Optional[str] = None,
+) -> str:
+        if not event_type or not tool_name:
+                return f"""<!doctype html>
+<html>
+    <head>
+        <meta charset=\"utf-8\" />
+        <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
+        <style>
+            html, body {{
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+            }}
+            iframe {{
+                width: 100%;
+                height: 100%;
+                border: 0;
+                display: block;
+            }}
+        </style>
+    </head>
+    <body>
+        <iframe id=\"app\" src=\"{iframe_src}\"></iframe>
+    </body>
+</html>"""
+
+        return f"""<!doctype html>
 <html>
   <head>
     <meta charset=\"utf-8\" />
@@ -102,6 +135,26 @@ def open_benefits_ui() -> ToolResult:
     )
 
 
+@mcp.tool(app=AppConfig(resource_uri=CARD_DASHBOARD_VIEW_URI, prefers_border=True))
+def open_card_dashboard_ui() -> ToolResult:
+    """Abre la UI que muestra la lista de tarjetas de crédito."""
+    return ToolResult(
+        content=[types.TextContent(type="text", text="Abriendo Card Dashboard…")]
+    )
+
+
+@mcp.tool(
+    app=AppConfig(resource_uri=IDENTIFICATION_FLOW_VIEW_URI, prefers_border=True)
+)
+def open_identification_flow_ui() -> ToolResult:
+    """Abre la UI del flujo de identificación del usuario."""
+    return ToolResult(
+        content=[
+            types.TextContent(type="text", text="Abriendo Identification Flow…")
+        ]
+    )
+
+
 @mcp.tool(
     app=AppConfig(
         resource_uri=RANGE_EARNINGS_VIEW_URI,
@@ -156,6 +209,16 @@ def benefits_view() -> str:
         event_type="benefits_selected",
         tool_name="build_benefits_message",
     )
+
+
+@mcp.resource(CARD_DASHBOARD_VIEW_URI, app=_RESOURCE_APP)
+def card_dashboard_view() -> str:
+    return _wrapper_html(iframe_src=f"{FRONTEND_ORIGIN}/card-dashboard")
+
+
+@mcp.resource(IDENTIFICATION_FLOW_VIEW_URI, app=_RESOURCE_APP)
+def identification_flow_view() -> str:
+    return _wrapper_html(iframe_src=f"{FRONTEND_ORIGIN}/identification-flow")
 
 
 # Compat: si ya estabas usando un único tool para abrir UI.
